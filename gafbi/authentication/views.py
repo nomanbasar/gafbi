@@ -12,6 +12,7 @@ from .serializers import (
     ResendForgotPasswordOtpSerializer,
     ResetPasswordSerializer,
     ChangePasswordSerializer,
+    VerifyForgotPasswordOtpSerializer
 )
 
 
@@ -95,6 +96,24 @@ class ResendForgotPasswordOtpView(APIView):
 
         return Response(
             {"success": True, "message": "forgot_password_otp_resent", "data": data},
+            status=status.HTTP_200_OK
+        )
+
+
+class VerifyForgotPasswordOtpView(APIView):
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        serializer = VerifyForgotPasswordOtpSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        data = serializer.save()
+
+        return Response(
+            {
+                "success": True,
+                "message": "forgot_password_otp_verified",
+                "data": data
+            },
             status=status.HTTP_200_OK
         )
 
