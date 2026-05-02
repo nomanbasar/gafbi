@@ -7,6 +7,7 @@ from .views import (
     ResendEmailVerifyOtpView,
     ForgotPasswordView,
     ResendForgotPasswordOtpView,
+    VerifyForgotPasswordOtpView,
     ResetPasswordView,
     ChangePasswordView,
 )
@@ -18,6 +19,7 @@ urlpatterns = [
     path("resend-email-verify-otp/", ResendEmailVerifyOtpView.as_view()),
     path("forgot-password/", ForgotPasswordView.as_view()),
     path("resend-forgot-password/", ResendForgotPasswordOtpView.as_view()),
+    path("verify-forgot-password-otp/", VerifyForgotPasswordOtpView.as_view()),
     path("reset-password/", ResetPasswordView.as_view()),
     path("change-password/", ChangePasswordView.as_view()),
 ]
