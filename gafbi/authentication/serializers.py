@@ -273,6 +273,11 @@ class VerifyForgotPasswordOtpSerializer(serializers.Serializer):
         refresh = RefreshToken.for_user(user)
 
         return {
+            "user": {
+                "id": str(user.id),
+                "email_address": user.email_address,
+                "is_email_verified": user.is_email_verified,
+            },
             "tokens": {
                 "access": str(refresh.access_token),
                 "refresh": str(refresh),
