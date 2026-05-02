@@ -119,15 +119,22 @@ class VerifyForgotPasswordOtpView(APIView):
 
 
 class ResetPasswordView(APIView):
-    permission_classes = [AllowAny]
+    permission_classes = [IsAuthenticated]
 
     def post(self, request):
-        serializer = ResetPasswordSerializer(data=request.data)
+        serializer = ResetPasswordSerializer(
+            data=request.data,
+            context={"request": request}
+        )
         serializer.is_valid(raise_exception=True)
         data = serializer.save()
 
         return Response(
-            {"success": True, "message": "password_reset_success", "data": data},
+            {
+                "success": True,
+                "message": "password_reset_success",
+                "data": data
+            },
             status=status.HTTP_200_OK
         )
 
