@@ -12,10 +12,12 @@ class ProductListView(APIView):
 
     def get(self, request):
         products = Product.objects.filter(is_active=True)
-        serializer = ProductSerializer(products, many=True, context={"request": request})
+
+        serializer = ProductSerializer(products, many=True)
 
         return Response({
             "success": True,
+            "message": "Product list fetched successfully",
             "data": serializer.data
         })
 
@@ -41,12 +43,17 @@ class ProductCreateView(APIView):
     permission_classes = [IsAdminUser]
 
     def post(self, request):
-        serializer = ProductSerializer(data=request.data, context={"request": request})
+        serializer = ProductSerializer(
+            data=request.data,
+            context={"request": request}
+        )
         serializer.is_valid(raise_exception=True)
-        product = serializer.save()
+
+        product = serializer.save(is_active=True)  
 
         return Response({
             "success": True,
+            "message": "Product created successfully",
             "data": ProductSerializer(product, context={"request": request}).data
         }, status=201)
 

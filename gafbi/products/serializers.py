@@ -3,6 +3,7 @@ from .models import Product
 
 
 class ProductSerializer(serializers.ModelSerializer):
+    image = serializers.ImageField(write_only=True, required=False)
     image_url = serializers.SerializerMethodField()
     quantity_with_unit = serializers.SerializerMethodField()
 
@@ -10,6 +11,7 @@ class ProductSerializer(serializers.ModelSerializer):
         model = Product
         fields = [
             "id",
+            "image_url",
             "product_id",
             "name",
             "price",
@@ -18,16 +20,21 @@ class ProductSerializer(serializers.ModelSerializer):
             "quantity_with_unit",
             "description",
             "image",
-            "image_url",
             "is_active",
             "created_at",
         ]
-        read_only_fields = ["id", "product_id", "image_url", "created_at"]
+        read_only_fields = [
+            "id",
+            "product_id",
+            "image_url",
+            "quantity_with_unit",
+            "is_active",
+            "created_at",
+        ]
 
     def get_image_url(self, obj):
-        request = self.context.get("request")
-        if obj.image and request:
-            return request.build_absolute_uri(obj.image.url)
+        if obj.image:
+            return obj.image.url
         return None
 
     def get_quantity_with_unit(self, obj):
