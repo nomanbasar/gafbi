@@ -51,13 +51,13 @@ class ContactMessageListView(APIView):
         return Response({
             "success": True,
             "message": "Contact message list fetched successfully",
-            "data": serializer.data,
             "meta": {
                 "page": page,
                 "limit": limit,
                 "total": total,
                 "totalPage": total_page,
-            }
+            },
+            "data": serializer.data,
         }, status=status.HTTP_200_OK)
 
 
