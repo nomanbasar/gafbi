@@ -2,24 +2,47 @@ from rest_framework.views import APIView
 from rest_framework.permissions import AllowAny, IsAdminUser
 from rest_framework.response import Response
 from rest_framework import status
-
 from .models import Product
 from .serializers import ProductSerializer
+from math import ceil
 
 
 class ProductListView(APIView):
     permission_classes = [AllowAny]
 
     def get(self, request):
+        page = int(request.GET.get("page", 1))
+        limit = int(request.GET.get("limit", 10))
+
+        if page < 1:
+            page = 1
+
+        if limit < 1:
+            limit = 10
+
         products = Product.objects.filter(is_active=True)
+
+        total = products.count()
+        total_page = ceil(total / limit) if total > 0 else 1
+
+        start = (page - 1) * limit
+        end = start + limit
+
+        products = products[start:end]
 
         serializer = ProductSerializer(products, many=True)
 
         return Response({
             "success": True,
             "message": "Product list fetched successfully",
-            "data": serializer.data
-        })
+            "meta": {
+                "page": page,
+                "limit": limit,
+                "total": total,
+                "totalPage": total_page,
+            },
+            "data": serializer.data,
+        }, status=status.HTTP_200_OK)
 
 
 class ProductDetailView(APIView):
