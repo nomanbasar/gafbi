@@ -88,13 +88,26 @@ class ProductUpdateView(APIView):
         product = Product.objects.filter(pk=pk).first()
 
         if not product:
-            return Response({"error": "Not found"}, status=404)
+            return Response({
+                "success": False,
+                "message": "Product not found",
+                "data": None
+            }, status=404)
 
-        serializer = ProductSerializer(product, data=request.data, partial=True, context={"request": request})
+        serializer = ProductSerializer(
+            product,
+            data=request.data,
+            partial=True,
+            context={"request": request}
+        )
         serializer.is_valid(raise_exception=True)
-        serializer.save()
+        product = serializer.save()
 
-        return Response({"success": True, "data": serializer.data})
+        return Response({
+            "success": True,
+            "message": "Product updated successfully",
+            "data": ProductSerializer(product, context={"request": request}).data
+        }, status=200)
 
 
 class ProductDeleteView(APIView):
@@ -104,8 +117,16 @@ class ProductDeleteView(APIView):
         product = Product.objects.filter(pk=pk).first()
 
         if not product:
-            return Response({"error": "Not found"}, status=404)
+            return Response({
+                "success": False,
+                "message": "Product not found",
+                "data": None
+            }, status=404)
 
         product.delete()
 
-        return Response({"success": True})
+        return Response({
+            "success": True,
+            "message": "Product deleted successfully",
+            "data": None
+        }, status=200)
