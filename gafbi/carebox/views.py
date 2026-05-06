@@ -22,12 +22,12 @@ class CareBoxProductListView(APIView):
 
     def get(self, request):
         page = int(request.GET.get("page", 1))
-        limit = int(request.GET.get("limit", 20))
+        limit = int(request.GET.get("limit", 10))
 
         if page < 1:
             page = 1
         if limit < 1:
-            limit = 20
+            limit = 10
 
         products = Product.objects.filter(is_active=True)
 
@@ -47,8 +47,7 @@ class CareBoxProductListView(APIView):
                 "limit": limit,
                 "total": total,
                 "totalPage": total_page,
-                "maxTotalAmount": 42,
-                "maxItems": 6,
+               
             },
             "data": serializer.data,
         }, status=status.HTTP_200_OK)
