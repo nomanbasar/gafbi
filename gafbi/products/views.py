@@ -3,8 +3,13 @@ from rest_framework.permissions import AllowAny, IsAdminUser
 from rest_framework.response import Response
 from rest_framework import status
 from .models import Product
-from .serializers import ProductSerializer
 from math import ceil
+
+from .serializers import (
+    ProductSerializer,
+    ProductDetailSerializer,
+    ProductReviewSerializer,
+)
 
 
 class ProductListView(APIView):
@@ -52,14 +57,22 @@ class ProductDetailView(APIView):
         product = Product.objects.filter(pk=pk, is_active=True).first()
 
         if not product:
-            return Response({"error": "Not found"}, status=404)
+            return Response({
+                "success": False,
+                "message": "Product not found",
+                "data": None
+            }, status=status.HTTP_404_NOT_FOUND)
 
-        serializer = ProductSerializer(product, context={"request": request})
+        serializer = ProductDetailSerializer(
+            product,
+            context={"request": request}
+        )
 
         return Response({
             "success": True,
+            "message": "Product details fetched successfully",
             "data": serializer.data
-        })
+        }, status=status.HTTP_200_OK)
 
 
 class ProductCreateView(APIView):
@@ -130,3 +143,28 @@ class ProductDeleteView(APIView):
             "message": "Product deleted successfully",
             "data": None
         }, status=200)
+    
+
+
+class ProductReviewCreateView(APIView):
+    permission_classes = [AllowAny]
+
+    def post(self, request, pk):
+        product = Product.objects.filter(pk=pk, is_active=True).first()
+
+        if not product:
+            return Response({
+                "success": False,
+                "message": "Product not found",
+                "data": None
+            }, status=status.HTTP_404_NOT_FOUND)
+
+        serializer = ProductReviewSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        review = serializer.save(product=product)
+
+        return Response({
+            "success": True,
+            "message": "Review submitted successfully",
+            "data": ProductReviewSerializer(review).data
+        }, status=status.HTTP_201_CREATED)
