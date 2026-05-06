@@ -221,8 +221,15 @@ class CareBoxApplicationCreateSerializer(serializers.Serializer):
 
 
 
-
 class CareBoxFeedbackSerializer(serializers.ModelSerializer):
+    satisfaction = serializers.ChoiceField(choices=[
+        "very_satisfied",
+        "satisfied",
+        "ok",
+        "dissatisfied",
+        "very_dissatisfied",
+    ])
+
     class Meta:
         model = CareBoxFeedback
         fields = [
@@ -234,10 +241,25 @@ class CareBoxFeedbackSerializer(serializers.ModelSerializer):
         ]
         read_only_fields = ["id", "created_at"]
 
+    def validate(self, attrs):
+        request = self.context.get("request")
+        application = attrs.get("application")
+
+        if application and request.user.is_authenticated:
+            if application.user != request.user:
+                raise serializers.ValidationError("This application does not belong to you")
+
+        if application and application.status != "delivered":
+            raise serializers.ValidationError("You can give feedback only after delivery")
+
+        return attrs
+
     def create(self, validated_data):
         request = self.context.get("request")
+
         if request and request.user and request.user.is_authenticated:
             validated_data["user"] = request.user
+
         return super().create(validated_data)
 
 
