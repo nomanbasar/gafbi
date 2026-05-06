@@ -3,6 +3,7 @@ from .views import *
 
 urlpatterns = [
     path("", ProductListView.as_view()),
+    path("<int:pk>/reviews/", ProductReviewCreateView.as_view()),
     path("<int:pk>/", ProductDetailView.as_view()),
 
     path("admin/create/", ProductCreateView.as_view()),
