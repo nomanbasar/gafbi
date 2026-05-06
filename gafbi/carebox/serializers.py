@@ -52,9 +52,27 @@ class CareBoxApplicationListSerializer(serializers.ModelSerializer):
         fields = [
             "id",
             "status",
+            "gender",
             "first_name",
             "last_name",
+            "date_of_birth",
             "level_of_care",
+            "street_address",
+            "area",
+            "city",
+            "zip_code",
+            "different_delivery_address",
+            "email",
+            "phone_number",
+            "consultation_answer",
+            "consultation_reason",
+            "already_provided_with_care_aids",
+            "insurance_type",
+            "insurance_name",
+            "insurance_number",
+            "signature",
+            "signed_cost_assumption",
+            "signed_supplier_change",
             "total_amount",
             "application_month",
             "created_at",
@@ -200,6 +218,8 @@ class CareBoxApplicationCreateSerializer(serializers.Serializer):
             )
 
         return application
+
+
 
 
 class CareBoxFeedbackSerializer(serializers.ModelSerializer):
