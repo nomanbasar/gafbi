@@ -247,10 +247,9 @@ class CareBoxFeedbackSerializer(serializers.ModelSerializer):
 
         if application and request.user.is_authenticated:
             if application.user != request.user:
-                raise serializers.ValidationError("This application does not belong to you")
-
-        if application and application.status != "delivered":
-            raise serializers.ValidationError("You can give feedback only after delivery")
+                raise serializers.ValidationError(
+                    "This application does not belong to you"
+                )
 
         return attrs
 
@@ -261,7 +260,6 @@ class CareBoxFeedbackSerializer(serializers.ModelSerializer):
             validated_data["user"] = request.user
 
         return super().create(validated_data)
-
 
 class AdminCareBoxStatusSerializer(serializers.Serializer):
     status = serializers.ChoiceField(choices=["pending", "approved", "rejected", "delivered", "cancelled"])
