@@ -51,6 +51,7 @@ INSTALLED_APPS = [
     'products',
     'contacts',
     'faqs',
+    'carebox',
 
 ]
 
