@@ -64,6 +64,11 @@ class CareBoxApplication(models.Model):
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default="pending")
     admin_note = models.TextField(blank=True, null=True)
 
+    shipping_carrier = models.CharField(max_length=100, blank=True, null=True)
+    tracking_number = models.CharField(max_length=100, blank=True, null=True)
+    shipped_quantity = models.PositiveIntegerField(default=0)
+    shipped_at = models.DateTimeField(blank=True, null=True)
+
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
