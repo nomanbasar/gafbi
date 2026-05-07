@@ -1,7 +1,7 @@
 from decimal import Decimal
 from django.utils import timezone
 from rest_framework import serializers
-
+from authentication.models import User
 from products.models import Product
 from products.serializers import ProductSerializer
 from .models import CareBoxApplication, CareBoxApplicationItem, CareBoxFeedback
@@ -263,4 +263,201 @@ class CareBoxFeedbackSerializer(serializers.ModelSerializer):
 
 class AdminCareBoxStatusSerializer(serializers.Serializer):
     status = serializers.ChoiceField(choices=["pending", "approved", "rejected", "delivered", "cancelled"])
+    admin_note = serializers.CharField(required=False, allow_blank=True, allow_null=True)
+
+
+
+class AdminDashboardUserSerializer(serializers.ModelSerializer):
+    user_id = serializers.SerializerMethodField()
+    name = serializers.SerializerMethodField()
+    register_email = serializers.EmailField(source="email_address")
+    joined = serializers.DateTimeField(source="created_at")
+    care_level = serializers.SerializerMethodField()
+
+    class Meta:
+        model = User
+        fields = [
+            "id",
+            "user_id",
+            "name",
+            "register_email",
+            "joined",
+            "care_level",
+        ]
+
+    def get_user_id(self, obj):
+        return f"@{obj.email_address.split('@')[0]}"
+
+    def get_name(self, obj):
+        application = obj.carebox_applications.order_by("-created_at").first()
+        if application:
+            return f"{application.first_name} {application.last_name}"
+        return obj.email_address.split("@")[0]
+
+    def get_care_level(self, obj):
+        application = obj.carebox_applications.order_by("-created_at").first()
+        if application:
+            return application.level_of_care
+        return None
+
+
+class AdminDashboardOrderListSerializer(serializers.ModelSerializer):
+    order_id = serializers.SerializerMethodField()
+    order_date = serializers.DateTimeField(source="created_at")
+    customer = serializers.SerializerMethodField()
+    shipping_carrier = serializers.SerializerMethodField()
+    shipment_status = serializers.SerializerMethodField()
+
+    class Meta:
+        model = CareBoxApplication
+        fields = [
+            "id",
+            "order_id",
+            "order_date",
+            "customer",
+            "email",
+            "shipping_carrier",
+            "shipment_status",
+            "status",
+        ]
+
+    def get_order_id(self, obj):
+        return f"DS-{obj.id}"
+
+    def get_customer(self, obj):
+        return f"{obj.first_name} {obj.last_name}"
+
+    def get_shipping_carrier(self, obj):
+        return obj.shipping_carrier or "N/A"
+
+    def get_shipment_status(self, obj):
+        if obj.status == "delivered":
+            return "shipped"
+        if obj.status == "cancelled":
+            return "cancelled"
+        return "unshipped"
+
+
+class AdminDashboardOrderDetailsSerializer(serializers.ModelSerializer):
+    order_id = serializers.SerializerMethodField()
+    order_date = serializers.DateTimeField(source="created_at")
+    delivery_date = serializers.DateTimeField(source="shipped_at", allow_null=True)
+    customer_name = serializers.SerializerMethodField()
+    shipping_address = serializers.SerializerMethodField()
+    items = CareBoxApplicationItemSerializer(many=True, read_only=True)
+
+    class Meta:
+        model = CareBoxApplication
+        fields = [
+            "id",
+            "order_id",
+            "order_date",
+            "delivery_date",
+            "customer_name",
+            "email",
+            "phone_number",
+            "shipping_address",
+            "total_amount",
+            "status",
+            "shipping_carrier",
+            "tracking_number",
+            "shipped_quantity",
+            "items",
+        ]
+
+    def get_order_id(self, obj):
+        return f"DS-{obj.id}"
+
+    def get_customer_name(self, obj):
+        return f"{obj.first_name} {obj.last_name}"
+
+    def get_shipping_address(self, obj):
+        if obj.different_delivery_address:
+            return {
+                "street_address": obj.delivery_street_address,
+                "area": obj.delivery_area,
+                "city": obj.delivery_city,
+                "zip_code": obj.delivery_zip_code,
+            }
+
+        return {
+            "street_address": obj.street_address,
+            "area": obj.area,
+            "city": obj.city,
+            "zip_code": obj.zip_code,
+        }
+
+
+class AdminConfirmShipmentSerializer(serializers.Serializer):
+    shipping_carrier = serializers.CharField(max_length=100)
+    tracking_number = serializers.CharField(max_length=100)
+    shipped_quantity = serializers.IntegerField(min_value=1)
+
+
+class AdminDashboardApplicationListSerializer(serializers.ModelSerializer):
+    application_date = serializers.DateTimeField(source="created_at")
+    customer = serializers.SerializerMethodField()
+
+    class Meta:
+        model = CareBoxApplication
+        fields = [
+            "id",
+            "application_date",
+            "customer",
+            "email",
+            "status",
+        ]
+
+    def get_customer(self, obj):
+        return f"{obj.first_name} {obj.last_name}"
+
+
+class AdminDashboardApplicationDetailsSerializer(serializers.ModelSerializer):
+    customer = serializers.SerializerMethodField()
+    items = CareBoxApplicationItemSerializer(many=True, read_only=True)
+
+    class Meta:
+        model = CareBoxApplication
+        fields = [
+            "id",
+            "customer",
+            "status",
+            "admin_note",
+            "gender",
+            "first_name",
+            "last_name",
+            "date_of_birth",
+            "level_of_care",
+            "street_address",
+            "area",
+            "city",
+            "zip_code",
+            "different_delivery_address",
+            "delivery_street_address",
+            "delivery_area",
+            "delivery_city",
+            "delivery_zip_code",
+            "email",
+            "phone_number",
+            "consultation_answer",
+            "consultation_reason",
+            "already_provided_with_care_aids",
+            "insurance_type",
+            "insurance_name",
+            "insurance_number",
+            "signature",
+            "signed_cost_assumption",
+            "signed_supplier_change",
+            "total_amount",
+            "application_month",
+            "created_at",
+            "items",
+        ]
+
+    def get_customer(self, obj):
+        return f"{obj.first_name} {obj.last_name}"
+
+
+class AdminApplicationDecisionSerializer(serializers.Serializer):
+    status = serializers.ChoiceField(choices=["approved", "rejected"])
     admin_note = serializers.CharField(required=False, allow_blank=True, allow_null=True)
