@@ -340,15 +340,16 @@ class AdminConfirmShipmentView(APIView):
                 "data": None,
             }, status=status.HTTP_404_NOT_FOUND)
 
-        serializer = AdminConfirmShipmentSerializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
+        if order.status == "delivered":
+            return Response({
+                "success": False,
+                "message": "This order is already shipped",
+                "data": AdminDashboardOrderDetailsSerializer(order).data,
+            }, status=status.HTTP_400_BAD_REQUEST)
 
-        order.shipping_carrier = serializer.validated_data["shipping_carrier"]
-        order.tracking_number = serializer.validated_data["tracking_number"]
-        order.shipped_quantity = serializer.validated_data["shipped_quantity"]
-        order.shipped_at = timezone.now()
         order.status = "delivered"
-        order.save()
+        order.shipped_at = timezone.now()
+        order.save(update_fields=["status", "shipped_at"])
 
         return Response({
             "success": True,
