@@ -18,6 +18,10 @@ class CareBoxApplicationAdmin(admin.ModelAdmin):
         "level_of_care",
         "total_amount",
         "application_month",
+        "shipping_carrier",
+        "tracking_number",
+        "shipped_quantity",
+        "shipped_at",
         "status",
         "created_at",
     ]
