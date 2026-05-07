@@ -5,6 +5,8 @@ from rest_framework.permissions import AllowAny, IsAuthenticated, IsAdminUser
 from rest_framework.response import Response
 from rest_framework import status
 from django.utils import timezone
+from django.db.models import Q
+from authentication.models import User
 
 from products.models import Product
 from .models import CareBoxApplication
@@ -14,6 +16,13 @@ from .serializers import (
     CareBoxApplicationListSerializer,
     CareBoxFeedbackSerializer,
     AdminCareBoxStatusSerializer,
+    AdminDashboardUserSerializer,
+    AdminDashboardOrderListSerializer,
+    AdminDashboardOrderDetailsSerializer,
+    AdminConfirmShipmentSerializer,
+    AdminDashboardApplicationListSerializer,
+    AdminDashboardApplicationDetailsSerializer,
+    AdminApplicationDecisionSerializer,
 )
 
 
@@ -208,4 +217,220 @@ class AdminCareBoxApplicationStatusUpdateView(APIView):
             "success": True,
             "message": "Care box application status updated successfully",
             "data": CareBoxApplicationListSerializer(application).data,
+        }, status=status.HTTP_200_OK)
+    
+
+
+def admin_paginate_queryset(queryset, request):
+    page = int(request.GET.get("page", 1))
+    limit = int(request.GET.get("limit", 10))
+
+    if page < 1:
+        page = 1
+    if limit < 1:
+        limit = 10
+
+    total = queryset.count()
+    total_page = ceil(total / limit) if total > 0 else 1
+
+    start = (page - 1) * limit
+    end = start + limit
+
+    return queryset[start:end], {
+        "page": page,
+        "limit": limit,
+        "total": total,
+        "totalPage": total_page,
+    }
+
+
+class AdminDashboardUserListView(APIView):
+    permission_classes = [IsAdminUser]
+
+    def get(self, request):
+        search = request.GET.get("search", "")
+
+        users = User.objects.filter(is_staff=False).order_by("-created_at")
+
+        if search:
+            users = users.filter(
+                Q(email_address__icontains=search) |
+                Q(carebox_applications__first_name__icontains=search) |
+                Q(carebox_applications__last_name__icontains=search)
+            ).distinct()
+
+        users, meta = admin_paginate_queryset(users, request)
+        serializer = AdminDashboardUserSerializer(users, many=True)
+
+        return Response({
+            "success": True,
+            "message": "Admin user list fetched successfully",
+            "meta": meta,
+            "data": serializer.data,
+        }, status=status.HTTP_200_OK)
+
+
+class AdminDashboardOrderListView(APIView):
+    permission_classes = [IsAdminUser]
+
+    def get(self, request):
+        search = request.GET.get("search", "")
+        shipment_status = request.GET.get("status", "")
+
+        orders = CareBoxApplication.objects.all().order_by("-created_at")
+
+        if search:
+            orders = orders.filter(
+                Q(first_name__icontains=search) |
+                Q(last_name__icontains=search) |
+                Q(email__icontains=search) |
+                Q(id__icontains=search)
+            )
+
+        if shipment_status == "shipped":
+            orders = orders.filter(status="delivered")
+        elif shipment_status == "unshipped":
+            orders = orders.exclude(status__in=["delivered", "cancelled"])
+        elif shipment_status == "cancelled":
+            orders = orders.filter(status="cancelled")
+
+        orders, meta = admin_paginate_queryset(orders, request)
+        serializer = AdminDashboardOrderListSerializer(orders, many=True)
+
+        return Response({
+            "success": True,
+            "message": "Admin order list fetched successfully",
+            "meta": meta,
+            "data": serializer.data,
+        }, status=status.HTTP_200_OK)
+
+
+class AdminDashboardOrderDetailsView(APIView):
+    permission_classes = [IsAdminUser]
+
+    def get(self, request, pk):
+        order = CareBoxApplication.objects.filter(pk=pk).first()
+
+        if not order:
+            return Response({
+                "success": False,
+                "message": "Order not found",
+                "data": None,
+            }, status=status.HTTP_404_NOT_FOUND)
+
+        serializer = AdminDashboardOrderDetailsSerializer(order)
+
+        return Response({
+            "success": True,
+            "message": "Order details fetched successfully",
+            "data": serializer.data,
+        }, status=status.HTTP_200_OK)
+
+
+class AdminConfirmShipmentView(APIView):
+    permission_classes = [IsAdminUser]
+
+    def post(self, request, pk):
+        order = CareBoxApplication.objects.filter(pk=pk).first()
+
+        if not order:
+            return Response({
+                "success": False,
+                "message": "Order not found",
+                "data": None,
+            }, status=status.HTTP_404_NOT_FOUND)
+
+        serializer = AdminConfirmShipmentSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        order.shipping_carrier = serializer.validated_data["shipping_carrier"]
+        order.tracking_number = serializer.validated_data["tracking_number"]
+        order.shipped_quantity = serializer.validated_data["shipped_quantity"]
+        order.shipped_at = timezone.now()
+        order.status = "delivered"
+        order.save()
+
+        return Response({
+            "success": True,
+            "message": "Shipment confirmed successfully",
+            "data": AdminDashboardOrderDetailsSerializer(order).data,
+        }, status=status.HTTP_200_OK)
+
+
+class AdminDashboardApplicationListView(APIView):
+    permission_classes = [IsAdminUser]
+
+    def get(self, request):
+        search = request.GET.get("search", "")
+        application_status = request.GET.get("status", "")
+
+        applications = CareBoxApplication.objects.all().order_by("-created_at")
+
+        if search:
+            applications = applications.filter(
+                Q(first_name__icontains=search) |
+                Q(last_name__icontains=search) |
+                Q(email__icontains=search)
+            )
+
+        if application_status:
+            applications = applications.filter(status=application_status)
+
+        applications, meta = admin_paginate_queryset(applications, request)
+        serializer = AdminDashboardApplicationListSerializer(applications, many=True)
+
+        return Response({
+            "success": True,
+            "message": "Admin application list fetched successfully",
+            "meta": meta,
+            "data": serializer.data,
+        }, status=status.HTTP_200_OK)
+
+
+class AdminDashboardApplicationDetailsView(APIView):
+    permission_classes = [IsAdminUser]
+
+    def get(self, request, pk):
+        application = CareBoxApplication.objects.filter(pk=pk).first()
+
+        if not application:
+            return Response({
+                "success": False,
+                "message": "Application not found",
+                "data": None,
+            }, status=status.HTTP_404_NOT_FOUND)
+
+        serializer = AdminDashboardApplicationDetailsSerializer(application)
+
+        return Response({
+            "success": True,
+            "message": "Application details fetched successfully",
+            "data": serializer.data,
+        }, status=status.HTTP_200_OK)
+
+
+class AdminApplicationDecisionView(APIView):
+    permission_classes = [IsAdminUser]
+
+    def post(self, request, pk):
+        application = CareBoxApplication.objects.filter(pk=pk).first()
+
+        if not application:
+            return Response({
+                "success": False,
+                "message": "Application not found",
+                "data": None,
+            }, status=status.HTTP_404_NOT_FOUND)
+
+        serializer = AdminApplicationDecisionSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        application.status = serializer.validated_data["status"]
+        application.admin_note = serializer.validated_data.get("admin_note")
+        application.save()
+
+        return Response({
+            "success": True,
+            "message": "Application decision updated successfully",
+            "data": AdminDashboardApplicationDetailsSerializer(application).data,
         }, status=status.HTTP_200_OK)
