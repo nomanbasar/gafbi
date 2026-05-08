@@ -14,21 +14,19 @@ from .security import enforce_resend_limits, enforce_otp_attempt_limit, blacklis
 #         "is_email_verified": user.is_email_verified,
 #     }
 def user_response(user):
-    latest_application = user.carebox_applications.order_by("-created_at").first()
-
-    if latest_application:
-        name = f"{latest_application.first_name} {latest_application.last_name}"
+    if user.name:
+        name = user.name
     else:
-        name = user.email_address.split("@")[0]
+        latest_application = user.carebox_applications.order_by("-created_at").first()
+
+        if latest_application:
+            name = f"{latest_application.first_name} {latest_application.last_name}"
+        else:
+            name = user.email_address.split("@")[0]
 
     image = None
-
-    if hasattr(user, "image") and user.image:
+    if user.image:
         image = user.image.url
-    elif hasattr(user, "profile_image") and user.profile_image:
-        image = user.profile_image.url
-    elif hasattr(user, "avatar") and user.avatar:
-        image = user.avatar.url
 
     role = "admin" if user.is_staff or user.is_superuser else "user"
 
@@ -40,7 +38,6 @@ def user_response(user):
         "role": role,
         "is_email_verified": user.is_email_verified,
     }
-
 
 def token_response(user):
     refresh = RefreshToken.for_user(user)
@@ -390,11 +387,7 @@ class AdminProfileSerializer(serializers.ModelSerializer):
         return obj.email_address.split("@")[0]
 
     def get_image(self, obj):
-        request = self.context.get("request")
-
         if obj.image:
-            if request:
-                return request.build_absolute_uri(obj.image.url)
             return obj.image.url
 
         return None
