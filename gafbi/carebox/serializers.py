@@ -5,7 +5,7 @@ from authentication.models import User
 from products.models import Product
 from products.serializers import ProductSerializer
 from .models import CareBoxApplication, CareBoxApplicationItem, CareBoxFeedback
-
+import calendar
 
 MAX_TOTAL_AMOUNT = Decimal("42.00")
 MAX_ITEMS = 6
@@ -461,3 +461,129 @@ class AdminDashboardApplicationDetailsSerializer(serializers.ModelSerializer):
 class AdminApplicationDecisionSerializer(serializers.Serializer):
     status = serializers.ChoiceField(choices=["approved", "rejected"])
     admin_note = serializers.CharField(required=False, allow_blank=True, allow_null=True)
+
+
+
+def get_month_name(application_month):
+    if not application_month:
+        return None
+
+    try:
+        year, month = application_month.split("-")
+        return f"{calendar.month_name[int(month)]} {year}"
+    except Exception:
+        return application_month
+
+
+class UserDashboardOverviewItemSerializer(serializers.ModelSerializer):
+    product_name = serializers.CharField(source="product.name", read_only=True)
+    product_image_url = serializers.SerializerMethodField()
+    quantity_with_unit = serializers.CharField(source="product.quantity_with_unit", read_only=True)
+
+    class Meta:
+        model = CareBoxApplicationItem
+        fields = [
+            "id",
+            "product",
+            "product_name",
+            "product_image_url",
+            "quantity",
+            "quantity_with_unit",
+        ]
+
+    def get_product_image_url(self, obj):
+        if obj.product.image:
+            return obj.product.image.url
+        return None
+
+
+class UserDashboardOverviewApplicationSerializer(serializers.ModelSerializer):
+    month = serializers.SerializerMethodField()
+    items = UserDashboardOverviewItemSerializer(many=True, read_only=True)
+
+    class Meta:
+        model = CareBoxApplication
+        fields = [
+            "id",
+            "month",
+            "status",
+            "application_month",
+            "created_at",
+            "items",
+        ]
+
+    def get_month(self, obj):
+        return get_month_name(obj.application_month)
+
+
+class UserDashboardDeliveryAddressSerializer(serializers.ModelSerializer):
+    current_address = serializers.SerializerMethodField()
+
+    class Meta:
+        model = CareBoxApplication
+        fields = [
+            "id",
+            "current_address",
+            "street_address",
+            "area",
+            "city",
+            "zip_code",
+            "email",
+            "phone_number",
+        ]
+
+    def get_current_address(self, obj):
+        return {
+            "name": f"{obj.first_name} {obj.last_name}",
+            "street_address": obj.street_address,
+            "area": obj.area,
+            "city": obj.city,
+            "zip_code": obj.zip_code,
+            "email": obj.email,
+            "phone_number": obj.phone_number,
+        }
+
+
+class UserDashboardDeliveryAddressUpdateSerializer(serializers.Serializer):
+    street_address = serializers.CharField(max_length=255, required=False)
+    area = serializers.CharField(max_length=120, required=False)
+    city = serializers.CharField(max_length=120, required=False)
+    zip_code = serializers.CharField(max_length=20, required=False)
+    email = serializers.EmailField(required=False)
+    phone_number = serializers.CharField(max_length=30, required=False)
+
+
+class UserDashboardPersonalDataSerializer(serializers.ModelSerializer):
+    gender = serializers.SerializerMethodField()
+
+    class Meta:
+        model = CareBoxApplication
+        fields = [
+            "id",
+            "gender",
+            "first_name",
+            "last_name",
+            "date_of_birth",
+            "level_of_care",
+        ]
+
+    def get_gender(self, obj):
+        if obj.gender == "diverse":
+            return "divers"
+        return obj.gender
+
+
+class UserDashboardPersonalDataUpdateSerializer(serializers.Serializer):
+    gender = serializers.ChoiceField(
+        choices=["mister", "woman", "divers", "diverse"],
+        required=False
+    )
+    first_name = serializers.CharField(max_length=100, required=False)
+    last_name = serializers.CharField(max_length=100, required=False)
+    date_of_birth = serializers.DateField(required=False)
+    level_of_care = serializers.IntegerField(min_value=1, max_value=10, required=False)
+
+    def validate_gender(self, value):
+        if value == "divers":
+            return "diverse"
+        return value
