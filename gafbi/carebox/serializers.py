@@ -567,11 +567,13 @@ class UserDashboardDeliveryAddressUpdateSerializer(serializers.Serializer):
 
 class UserDashboardPersonalDataSerializer(serializers.ModelSerializer):
     gender = serializers.SerializerMethodField()
+    image = serializers.SerializerMethodField()
 
     class Meta:
         model = CareBoxApplication
         fields = [
             "id",
+            "image",
             "gender",
             "first_name",
             "last_name",
@@ -584,8 +586,14 @@ class UserDashboardPersonalDataSerializer(serializers.ModelSerializer):
             return "divers"
         return obj.gender
 
+    def get_image(self, obj):
+        if obj.user and obj.user.image:
+            return obj.user.image.url
+        return None
+
 
 class UserDashboardPersonalDataUpdateSerializer(serializers.Serializer):
+    image = serializers.ImageField(required=False)
     gender = serializers.ChoiceField(
         choices=["mister", "woman", "divers", "diverse"],
         required=False
