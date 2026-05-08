@@ -478,7 +478,7 @@ def get_month_name(application_month):
 class UserDashboardOverviewItemSerializer(serializers.ModelSerializer):
     product_name = serializers.CharField(source="product.name", read_only=True)
     product_image_url = serializers.SerializerMethodField()
-    quantity_with_unit = serializers.CharField(source="product.quantity_with_unit", read_only=True)
+    quantity_with_unit = serializers.SerializerMethodField()
 
     class Meta:
         model = CareBoxApplicationItem
@@ -494,6 +494,18 @@ class UserDashboardOverviewItemSerializer(serializers.ModelSerializer):
     def get_product_image_url(self, obj):
         if obj.product.image:
             return obj.product.image.url
+        return None
+
+    def get_quantity_with_unit(self, obj):
+        quantity = getattr(obj.product, "quantity", None)
+        unit = getattr(obj.product, "unit", None)
+
+        if quantity and unit:
+            return f"{quantity} {unit}"
+
+        if quantity:
+            return str(quantity)
+
         return None
 
 
