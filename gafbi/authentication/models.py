@@ -36,6 +36,8 @@ class User(AbstractBaseUser, PermissionsMixin):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
 
     email_address = models.EmailField(unique=True)
+    name = models.CharField(max_length=150, blank=True, null=True)
+    image = models.ImageField(upload_to="admin_profiles/", blank=True, null=True)
 
     is_active = models.BooleanField(default=False)
     is_email_verified = models.BooleanField(default=False)
