@@ -372,3 +372,37 @@ class ChangePasswordSerializer(serializers.Serializer):
             "user": user_response(user),
             "tokens": token_response(user),
         }
+    
+
+
+class AdminProfileSerializer(serializers.ModelSerializer):
+    image = serializers.SerializerMethodField()
+
+    class Meta:
+        model = User
+        fields = ["id", "name", "image", "email_address"]
+
+    def get_image(self, obj):
+        request = self.context.get("request")
+
+        if obj.image:
+            if request:
+                return request.build_absolute_uri(obj.image.url)
+            return obj.image.url
+
+        return None
+
+
+class AdminProfileUpdateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = ["name", "image"]
+
+    def update(self, instance, validated_data):
+        instance.name = validated_data.get("name", instance.name)
+
+        if "image" in validated_data:
+            instance.image = validated_data.get("image")
+
+        instance.save()
+        return instance
