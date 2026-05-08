@@ -25,4 +25,13 @@ urlpatterns = [
     path("admin-dashboard/applications/", AdminDashboardApplicationListView.as_view()),
     path("admin-dashboard/applications/<int:pk>/", AdminDashboardApplicationDetailsView.as_view()),
     path("admin-dashboard/applications/<int:pk>/decision/", AdminApplicationDecisionView.as_view()),
+
+
+    path("user-dashboard/overview/", UserDashboardOverviewView.as_view()),
+
+    path("user-dashboard/delivery-address/", UserDashboardDeliveryAddressView.as_view()),
+    path("user-dashboard/delivery-address/update/", UserDashboardDeliveryAddressUpdateView.as_view()),
+
+    path("user-dashboard/personal-data/", UserDashboardPersonalDataView.as_view()),
+    path("user-dashboard/personal-data/update/", UserDashboardPersonalDataUpdateView.as_view()),
 ]
