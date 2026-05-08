@@ -7,7 +7,7 @@ from .models import User, OTP
 @admin.register(User)
 class UserAdmin(BaseUserAdmin):
     ordering = ["-created_at"]
-    list_display = ["email_address", "is_email_verified", "is_active", "is_staff", "created_at"]
+    list_display = ["email_address", "is_email_verified", "name", "image", "is_active", "is_staff", "created_at"]
     search_fields = ["email_address"]
 
     fieldsets = (
