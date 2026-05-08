@@ -7,10 +7,37 @@ from .utils import generate_otp, otp_expiry, send_otp_email
 from .security import enforce_resend_limits, enforce_otp_attempt_limit, blacklist_all_refresh_tokens
 
 
+# def user_response(user):
+#     return {
+#         "id": str(user.id),
+#         "email_address": user.email_address,
+#         "is_email_verified": user.is_email_verified,
+#     }
 def user_response(user):
+    latest_application = user.carebox_applications.order_by("-created_at").first()
+
+    if latest_application:
+        name = f"{latest_application.first_name} {latest_application.last_name}"
+    else:
+        name = user.email_address.split("@")[0]
+
+    image = None
+
+    if hasattr(user, "image") and user.image:
+        image = user.image.url
+    elif hasattr(user, "profile_image") and user.profile_image:
+        image = user.profile_image.url
+    elif hasattr(user, "avatar") and user.avatar:
+        image = user.avatar.url
+
+    role = "admin" if user.is_staff or user.is_superuser else "user"
+
     return {
         "id": str(user.id),
+        "name": name,
+        "image": image,
         "email_address": user.email_address,
+        "role": role,
         "is_email_verified": user.is_email_verified,
     }
 
