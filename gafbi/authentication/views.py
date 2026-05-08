@@ -1,8 +1,8 @@
 from rest_framework.views import APIView
-from rest_framework.permissions import AllowAny, IsAuthenticated
+from rest_framework.permissions import AllowAny, IsAuthenticated, IsAdminUser
 from rest_framework.response import Response
 from rest_framework import status
-
+from rest_framework.parsers import MultiPartParser, FormParser
 from .serializers import (
     SignupSerializer,
     VerifyEmailSerializer,
@@ -12,7 +12,9 @@ from .serializers import (
     ResendForgotPasswordOtpSerializer,
     ResetPasswordSerializer,
     ChangePasswordSerializer,
-    VerifyForgotPasswordOtpSerializer
+    VerifyForgotPasswordOtpSerializer,
+    AdminProfileSerializer,
+    AdminProfileUpdateSerializer,
 )
 
 
@@ -154,3 +156,44 @@ class ChangePasswordView(APIView):
             {"success": True, "message": "password_changed_success", "data": data},
             status=status.HTTP_200_OK
         )
+    
+
+class AdminProfileView(APIView):
+    permission_classes = [IsAdminUser]
+
+    def get(self, request):
+        serializer = AdminProfileSerializer(
+            request.user,
+            context={"request": request}
+        )
+
+        return Response({
+            "success": True,
+            "message": "admin_profile_fetched",
+            "data": serializer.data
+        }, status=status.HTTP_200_OK)
+
+
+class AdminProfileUpdateView(APIView):
+    permission_classes = [IsAdminUser]
+    parser_classes = [MultiPartParser, FormParser]
+
+    def patch(self, request):
+        serializer = AdminProfileUpdateSerializer(
+            request.user,
+            data=request.data,
+            partial=True
+        )
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+
+        response_serializer = AdminProfileSerializer(
+            request.user,
+            context={"request": request}
+        )
+
+        return Response({
+            "success": True,
+            "message": "admin_profile_updated",
+            "data": response_serializer.data
+        }, status=status.HTTP_200_OK)
