@@ -7,7 +7,7 @@ from rest_framework import status
 from django.utils import timezone
 from django.db.models import Q
 from authentication.models import User
-
+from rest_framework.parsers import MultiPartParser, FormParser
 from products.models import Product
 from .models import CareBoxApplication
 from .serializers import (
@@ -550,6 +550,7 @@ class UserDashboardPersonalDataView(APIView):
 
 class UserDashboardPersonalDataUpdateView(APIView):
     permission_classes = [IsAuthenticated]
+    parser_classes = [MultiPartParser, FormParser]
 
     def patch(self, request):
         application = get_latest_user_application(request.user)
@@ -561,8 +562,17 @@ class UserDashboardPersonalDataUpdateView(APIView):
                 "data": None,
             }, status=status.HTTP_404_NOT_FOUND)
 
-        serializer = UserDashboardPersonalDataUpdateSerializer(data=request.data, partial=True)
+        serializer = UserDashboardPersonalDataUpdateSerializer(
+            data=request.data,
+            partial=True
+        )
         serializer.is_valid(raise_exception=True)
+
+        image = serializer.validated_data.pop("image", None)
+
+        if image:
+            request.user.image = image
+            request.user.save(update_fields=["image"])
 
         for field, value in serializer.validated_data.items():
             setattr(application, field, value)
@@ -574,3 +584,5 @@ class UserDashboardPersonalDataUpdateView(APIView):
             "message": "user_personal_data_updated",
             "data": UserDashboardPersonalDataSerializer(application).data,
         }, status=status.HTTP_200_OK)
+    
+    
