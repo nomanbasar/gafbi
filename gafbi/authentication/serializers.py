@@ -376,11 +376,18 @@ class ChangePasswordSerializer(serializers.Serializer):
 
 
 class AdminProfileSerializer(serializers.ModelSerializer):
+    name = serializers.SerializerMethodField()
     image = serializers.SerializerMethodField()
 
     class Meta:
         model = User
         fields = ["id", "name", "image", "email_address"]
+
+    def get_name(self, obj):
+        if obj.name:
+            return obj.name
+
+        return obj.email_address.split("@")[0]
 
     def get_image(self, obj):
         request = self.context.get("request")
