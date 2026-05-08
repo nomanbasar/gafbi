@@ -23,6 +23,11 @@ from .serializers import (
     AdminDashboardApplicationListSerializer,
     AdminDashboardApplicationDetailsSerializer,
     AdminApplicationDecisionSerializer,
+    UserDashboardOverviewApplicationSerializer,
+    UserDashboardDeliveryAddressSerializer,
+    UserDashboardDeliveryAddressUpdateSerializer,
+    UserDashboardPersonalDataSerializer,
+    UserDashboardPersonalDataUpdateSerializer,
 )
 
 
@@ -434,4 +439,138 @@ class AdminApplicationDecisionView(APIView):
             "success": True,
             "message": "Application decision updated successfully",
             "data": AdminDashboardApplicationDetailsSerializer(application).data,
+        }, status=status.HTTP_200_OK)
+    
+
+
+def get_latest_user_application(user):
+    return CareBoxApplication.objects.filter(
+        user=user
+    ).order_by("-created_at").first()
+
+
+class UserDashboardOverviewView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        applications = CareBoxApplication.objects.filter(
+            user=request.user
+        ).order_by("-created_at")
+
+        serializer = UserDashboardOverviewApplicationSerializer(
+            applications,
+            many=True
+        )
+
+        latest_application = applications.first()
+
+        return Response({
+            "success": True,
+            "message": "user_dashboard_overview_fetched",
+            "data": {
+                "next_shipping_date": None,
+                "note": "Due to increased demand, supply shortages of FFP2 masks may currently occur. If your order is affected, we will inform you separately. Thank you for your understanding.",
+                "latest_application": UserDashboardOverviewApplicationSerializer(latest_application).data if latest_application else None,
+                "applications": serializer.data,
+            }
+        }, status=status.HTTP_200_OK)
+
+
+class UserDashboardDeliveryAddressView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        application = get_latest_user_application(request.user)
+
+        if not application:
+            return Response({
+                "success": False,
+                "message": "No care box application found",
+                "data": None,
+            }, status=status.HTTP_404_NOT_FOUND)
+
+        serializer = UserDashboardDeliveryAddressSerializer(application)
+
+        return Response({
+            "success": True,
+            "message": "user_delivery_address_fetched",
+            "data": serializer.data,
+        }, status=status.HTTP_200_OK)
+
+
+class UserDashboardDeliveryAddressUpdateView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def patch(self, request):
+        application = get_latest_user_application(request.user)
+
+        if not application:
+            return Response({
+                "success": False,
+                "message": "No care box application found",
+                "data": None,
+            }, status=status.HTTP_404_NOT_FOUND)
+
+        serializer = UserDashboardDeliveryAddressUpdateSerializer(data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+
+        for field, value in serializer.validated_data.items():
+            setattr(application, field, value)
+
+        application.save()
+
+        return Response({
+            "success": True,
+            "message": "user_delivery_address_updated",
+            "data": UserDashboardDeliveryAddressSerializer(application).data,
+        }, status=status.HTTP_200_OK)
+
+
+class UserDashboardPersonalDataView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        application = get_latest_user_application(request.user)
+
+        if not application:
+            return Response({
+                "success": False,
+                "message": "No care box application found",
+                "data": None,
+            }, status=status.HTTP_404_NOT_FOUND)
+
+        serializer = UserDashboardPersonalDataSerializer(application)
+
+        return Response({
+            "success": True,
+            "message": "user_personal_data_fetched",
+            "data": serializer.data,
+        }, status=status.HTTP_200_OK)
+
+
+class UserDashboardPersonalDataUpdateView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def patch(self, request):
+        application = get_latest_user_application(request.user)
+
+        if not application:
+            return Response({
+                "success": False,
+                "message": "No care box application found",
+                "data": None,
+            }, status=status.HTTP_404_NOT_FOUND)
+
+        serializer = UserDashboardPersonalDataUpdateSerializer(data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+
+        for field, value in serializer.validated_data.items():
+            setattr(application, field, value)
+
+        application.save()
+
+        return Response({
+            "success": True,
+            "message": "user_personal_data_updated",
+            "data": UserDashboardPersonalDataSerializer(application).data,
         }, status=status.HTTP_200_OK)
