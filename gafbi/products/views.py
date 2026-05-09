@@ -2,7 +2,7 @@ from rest_framework.views import APIView
 from rest_framework.permissions import AllowAny, IsAdminUser
 from rest_framework.response import Response
 from rest_framework import status
-from .models import Product
+from .models import Product, ProductReview
 from math import ceil
 
 from .serializers import (
@@ -168,3 +168,21 @@ class ProductReviewCreateView(APIView):
             "message": "Review submitted successfully",
             "data": ProductReviewSerializer(review).data
         }, status=status.HTTP_201_CREATED)
+    
+
+class AllProductReviewListView(APIView):
+    permission_classes = [AllowAny]
+
+    def get(self, request):
+        reviews = ProductReview.objects.filter(
+            is_active=True,
+            product__is_active=True
+        ).select_related("product").order_by("-rating", "-created_at")
+
+        serializer = ProductReviewSerializer(reviews, many=True)
+
+        return Response({
+            "success": True,
+            "message": "All product reviews fetched successfully",
+            "data": serializer.data
+        }, status=status.HTTP_200_OK)
