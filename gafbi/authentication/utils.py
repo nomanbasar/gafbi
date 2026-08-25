@@ -26,3 +26,53 @@ def send_otp_email(email, otp, purpose):
         recipient_list=[email],
         fail_silently=False,
     )
+
+
+def set_refresh_cookie(response, refresh_token):
+    response.set_cookie(
+        key=settings.AUTH_REFRESH_COOKIE_NAME,
+        value=refresh_token,
+        max_age=int(
+            settings.SIMPLE_JWT[
+                "REFRESH_TOKEN_LIFETIME"
+            ].total_seconds()
+        ),
+        httponly=True,
+        secure=settings.AUTH_COOKIE_SECURE,
+        samesite=settings.AUTH_COOKIE_SAMESITE,
+        path=settings.AUTH_COOKIE_PATH,
+        domain=settings.AUTH_COOKIE_DOMAIN,
+    )
+    return response
+
+
+def delete_refresh_cookie(response):
+    response.delete_cookie(
+        key=settings.AUTH_REFRESH_COOKIE_NAME,
+        path=settings.AUTH_COOKIE_PATH,
+        domain=settings.AUTH_COOKIE_DOMAIN,
+        samesite=settings.AUTH_COOKIE_SAMESITE,
+    )
+    return response
+
+
+def move_refresh_token_to_cookie(response, data):
+    tokens = (
+        data.get("tokens")
+        if isinstance(data, dict)
+        else None
+    )
+
+    if isinstance(tokens, dict):
+        refresh_token = tokens.pop(
+            "refresh",
+            None
+        )
+
+        if refresh_token:
+            set_refresh_cookie(
+                response,
+                refresh_token
+            )
+
+    return response

@@ -4,6 +4,8 @@ from .views import (
     SignupView,
     VerifyEmailView,
     LoginView,
+    RefreshAccessTokenView,
+    LogoutView,
     ResendEmailVerifyOtpView,
     ForgotPasswordView,
     ResendForgotPasswordOtpView,
@@ -12,12 +14,16 @@ from .views import (
     ChangePasswordView,
     AdminProfileView,
     AdminProfileUpdateView,
+    MeView,
 )
 
 urlpatterns = [
     path("signup/", SignupView.as_view()),
     path("verify-email/", VerifyEmailView.as_view()),
     path("login/", LoginView.as_view()),
+    path("refresh/",RefreshAccessTokenView.as_view()),
+
+    path("logout/", LogoutView.as_view()),
     path("resend-email-verify-otp/", ResendEmailVerifyOtpView.as_view()),
     path("forgot-password/", ForgotPasswordView.as_view()),
     path("resend-forgot-password/", ResendForgotPasswordOtpView.as_view()),
@@ -26,4 +32,6 @@ urlpatterns = [
     path("change-password/", ChangePasswordView.as_view()),
     path("admin/profile/", AdminProfileView.as_view()),
     path("admin/profile/update/", AdminProfileUpdateView.as_view()),
+
+    path("me/", MeView.as_view()),
 ]

@@ -135,8 +135,57 @@ STATIC_URL = 'static/'
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
 
-CORS_ALLOW_ALL_ORIGINS = True
+# CORS_ALLOW_ALL_ORIGINS = True
+# CORS_ALLOW_CREDENTIALS = True
+
+CORS_ALLOW_ALL_ORIGINS = (
+    os.getenv("CORS_ALLOW_ALL_ORIGINS", "True").lower() == "true"
+)
+
 CORS_ALLOW_CREDENTIALS = True
+
+cors_origins = os.getenv("CORS_ALLOWED_ORIGINS", "").strip()
+
+if cors_origins:
+    CORS_ALLOWED_ORIGINS = [
+        origin.strip()
+        for origin in cors_origins.split(",")
+        if origin.strip()
+    ]
+
+csrf_origins = os.getenv("CSRF_TRUSTED_ORIGINS", "").strip()
+
+if csrf_origins:
+    CSRF_TRUSTED_ORIGINS = [
+        origin.strip()
+        for origin in csrf_origins.split(",")
+        if origin.strip()
+    ]
+
+
+# Refresh token cookie settings
+AUTH_REFRESH_COOKIE_NAME = os.getenv(
+    "AUTH_REFRESH_COOKIE_NAME",
+    "refresh_token"
+)
+
+AUTH_COOKIE_SECURE = (
+    os.getenv("AUTH_COOKIE_SECURE", "False").lower() == "true"
+)
+
+AUTH_COOKIE_SAMESITE = os.getenv(
+    "AUTH_COOKIE_SAMESITE",
+    "Lax"
+)
+
+AUTH_COOKIE_PATH = os.getenv(
+    "AUTH_COOKIE_PATH",
+    "/api/auth/"
+)
+
+AUTH_COOKIE_DOMAIN = os.getenv(
+    "AUTH_COOKIE_DOMAIN"
+) or None
 
 
 AUTHENTICATION_BACKENDS = [
@@ -152,10 +201,12 @@ REST_FRAMEWORK = {
 }
 
 SIMPLE_JWT = {
-    "ACCESS_TOKEN_LIFETIME": timedelta(minutes=600),
-    "REFRESH_TOKEN_LIFETIME": timedelta(days=30),
+    "ACCESS_TOKEN_LIFETIME": timedelta(minutes=60),
+    "REFRESH_TOKEN_LIFETIME": timedelta(days=1),
+
+    "ROTATE_REFRESH_TOKENS": True,
     "BLACKLIST_AFTER_ROTATION": True,
-    "ROTATE_REFRESH_TOKENS": False,
+
     "AUTH_HEADER_TYPES": ("Bearer",),
 }
 
