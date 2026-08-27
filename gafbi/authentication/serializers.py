@@ -1,4 +1,5 @@
 from django.contrib.auth import authenticate
+from django.db import transaction
 from rest_framework import serializers
 from rest_framework_simplejwt.tokens import RefreshToken
 
@@ -7,12 +8,6 @@ from .utils import generate_otp, otp_expiry, send_otp_email
 from .security import enforce_resend_limits, enforce_otp_attempt_limit, blacklist_all_refresh_tokens
 
 
-# def user_response(user):
-#     return {
-#         "id": str(user.id),
-#         "email_address": user.email_address,
-#         "is_email_verified": user.is_email_verified,
-#     }
 def user_response(user):
     if user.name:
         name = user.name
@@ -62,6 +57,7 @@ class SignupSerializer(serializers.Serializer):
             raise serializers.ValidationError("password_not_match")
         return attrs
 
+    @transaction.atomic
     def create(self, validated_data):
         user = User.objects.create_user(
             email_address=validated_data["email_address"],

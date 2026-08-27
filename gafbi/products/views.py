@@ -123,11 +123,35 @@ class ProductUpdateView(APIView):
         }, status=200)
 
 
+# class ProductDeleteView(APIView):
+#     permission_classes = [IsAdminUser]
+
+#     def delete(self, request, pk):
+#         product = Product.objects.filter(pk=pk).first()
+
+#         if not product:
+#             return Response({
+#                 "success": False,
+#                 "message": "Product not found",
+#                 "data": None
+#             }, status=404)
+
+#         product.delete()
+
+#         return Response({
+#             "success": True,
+#             "message": "Product deleted successfully",
+#             "data": None
+#         }, status=200)
+    
 class ProductDeleteView(APIView):
     permission_classes = [IsAdminUser]
 
     def delete(self, request, pk):
-        product = Product.objects.filter(pk=pk).first()
+        product = Product.objects.filter(
+            pk=pk,
+            is_active=True
+        ).first()
 
         if not product:
             return Response({
@@ -136,15 +160,14 @@ class ProductDeleteView(APIView):
                 "data": None
             }, status=404)
 
-        product.delete()
+        product.is_active = False
+        product.save(update_fields=["is_active"])
 
         return Response({
             "success": True,
             "message": "Product deleted successfully",
             "data": None
         }, status=200)
-    
-
 
 class ProductReviewCreateView(APIView):
     permission_classes = [AllowAny]

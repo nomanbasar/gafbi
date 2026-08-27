@@ -1,3 +1,4 @@
+import hashlib
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 
@@ -25,8 +26,44 @@ class UserAdmin(BaseUserAdmin):
     )
 
 
+
 @admin.register(OTP)
 class OTPAdmin(admin.ModelAdmin):
-    list_display = ["email_address", "purpose", "otp_code", "is_verified", "attempt_count", "expires_at", "created_at"]
-    search_fields = ["email_address", "otp_code"]
+    list_display = [
+        "email_address",
+        "purpose",
+        "hashed_otp",
+        "is_verified",
+        "attempt_count",
+        "expires_at",
+        "created_at",
+    ]
+
+    search_fields = ["email_address"]
     list_filter = ["purpose", "is_verified"]
+
+    fields = [
+        "user",
+        "email_address",
+        "purpose",
+        "hashed_otp",
+        "attempt_count",
+        "resend_count",
+        "is_verified",
+        "expires_at",
+        "created_at",
+    ]
+
+    readonly_fields = [
+        "hashed_otp",
+        "created_at",
+    ]
+
+    @admin.display(description="OTP Hash")
+    def hashed_otp(self, obj):
+        if not obj or not obj.otp_code:
+            return "-"
+
+        return hashlib.sha256(
+            obj.otp_code.encode("utf-8")
+        ).hexdigest()
